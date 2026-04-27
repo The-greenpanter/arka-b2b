@@ -40,3 +40,13 @@ gradle-dists/
 # Secrets
 .env
 *.env
+
+# Artefactos de sesión
+[auth]
+[internal]
+.metals/
+CANCELED
+Autenticando
+Construyendo
+ERROR
+=
