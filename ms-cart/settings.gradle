@@ -1,0 +1,15 @@
+pluginManagement { repositories { gradlePluginPortal() } }
+buildCache { local { directory = new File(rootDir, 'build-cache') } }
+rootProject.name = 'ms-cart'
+include ':app-service'
+include ':model'
+include ':usecase'
+include ':reactive-web'
+include ':mongo-repository'
+include ':kafka-producer'
+project(':app-service').projectDir      = file('./applications/app-service')
+project(':model').projectDir            = file('./domain/model')
+project(':usecase').projectDir          = file('./domain/usecase')
+project(':reactive-web').projectDir     = file('./infrastructure/entry-points/reactive-web')
+project(':mongo-repository').projectDir = file('./infrastructure/driven-adapters/mongo-repository')
+project(':kafka-producer').projectDir   = file('./infrastructure/driven-adapters/kafka-producer')

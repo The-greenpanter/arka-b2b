@@ -1,0 +1,42 @@
+# Gradle
+.gradle/
+build/
+build-cache/
+**/build/
+**/.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# VS Code
+.vscode/
+
+# Spring Boot
+*.log
+logs/
+
+# Compiled class files
+*.class
+
+# Package files
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node / frontend
+arka-frontend/node_modules/
+arka-frontend/dist/
+
+# Docker temp
+gradle-dists/
+
+# Secrets
+.env
+*.env

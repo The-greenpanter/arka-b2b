@@ -1,0 +1,3 @@
+pluginManagement { repositories { gradlePluginPortal() } }
+buildCache { local { directory = new File(rootDir, 'build-cache') } }
+rootProject.name = 'api-gateway'

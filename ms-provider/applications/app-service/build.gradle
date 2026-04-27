@@ -1,0 +1,20 @@
+apply plugin: 'org.springframework.boot'
+
+dependencies {
+	testImplementation 'tools.jackson.core:jackson-databind'
+	testImplementation 'com.tngtech.archunit:archunit:1.4.1'
+    implementation project(':reactive-web')
+    implementation project(':model')
+    implementation project(':usecase')
+    implementation project(':kafka-producer')
+    implementation project(':kafka-consumer')
+    implementation project(':r2dbc-postgresql')
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.kafka:spring-kafka'
+    runtimeOnly('org.springframework.boot:spring-boot-devtools')
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.projectreactor:reactor-test'
+}
+
+jar { enabled = false }
+bootJar { archiveFileName = "${rootProject.name}.${archiveExtension.get()}" }

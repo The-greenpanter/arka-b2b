@@ -1,0 +1,11 @@
+pluginManagement { repositories { gradlePluginPortal() } }
+buildCache { local { directory = new File(rootDir, 'build-cache') } }
+rootProject.name = 'ms-payment'
+include ':app-service', ':model', ':usecase', ':reactive-web', ':r2dbc-postgresql', ':kafka-producer', ':kafka-consumer'
+project(':app-service').projectDir      = file('./applications/app-service')
+project(':model').projectDir            = file('./domain/model')
+project(':usecase').projectDir          = file('./domain/usecase')
+project(':reactive-web').projectDir     = file('./infrastructure/entry-points/reactive-web')
+project(':r2dbc-postgresql').projectDir = file('./infrastructure/driven-adapters/r2dbc-postgresql')
+project(':kafka-producer').projectDir   = file('./infrastructure/driven-adapters/kafka-producer')
+project(':kafka-consumer').projectDir   = file('./infrastructure/driven-adapters/kafka-consumer')

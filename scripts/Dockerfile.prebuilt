@@ -1,0 +1,7 @@
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+RUN addgroup -S arka && adduser -S arka -G arka
+ARG JAR_FILE
+COPY ${JAR_FILE} app.jar
+USER arka
+ENTRYPOINT ["java", "-jar", "app.jar"]

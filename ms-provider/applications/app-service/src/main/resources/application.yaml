@@ -1,0 +1,25 @@
+server:
+  port: 8085
+spring:
+  application:
+    name: "ms-provider"
+  devtools:
+    add-properties: false
+  r2dbc:
+    url: ${R2DBC_URL:r2dbc:postgresql://localhost:5432/arka_provider}
+    username: ${DB_USER:arka}
+    password: ${DB_PASSWORD:arka123}
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ms-provider
+      auto-offset-reset: earliest
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"

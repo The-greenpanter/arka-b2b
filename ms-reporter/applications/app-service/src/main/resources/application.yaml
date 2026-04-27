@@ -1,0 +1,32 @@
+server:
+  port: 8088
+spring:
+  application:
+    name: "ms-reporter"
+  devtools:
+    add-properties: false
+  r2dbc:
+    url: ${R2DBC_URL:r2dbc:postgresql://localhost:5432/arka_reporter}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    pool:
+      initial-size: 10
+      max-size: 20
+      validation-query: "SELECT 1"
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ms-reporter
+      auto-offset-reset: earliest
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,prometheus,info"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+cors:
+  allowed-origins: "http://localhost:4200,http://localhost:8080,http://localhost:8088"

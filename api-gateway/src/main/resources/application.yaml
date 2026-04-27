@@ -1,0 +1,64 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: ms-catalog
+          uri: ${CATALOG_URL:http://ms-catalog:8081}
+          predicates:
+            - Path=/api/v1/products/**
+          filters:
+            - StripPrefix=0
+        - id: ms-inventory
+          uri: ${INVENTORY_URL:http://ms-inventory:8082}
+          predicates:
+            - Path=/api/stocks/**
+          filters:
+            - StripPrefix=0
+        - id: ms-order
+          uri: ${ORDER_URL:http://ms-order:8083}
+          predicates:
+            - Path=/api/orders/**
+          filters:
+            - StripPrefix=0
+        - id: ms-cart
+          uri: ${CART_URL:http://ms-cart:8086}
+          predicates:
+            - Path=/api/carts/**
+          filters:
+            - StripPrefix=0
+        - id: ms-payment
+          uri: ${PAYMENT_URL:http://ms-payment:8084}
+          predicates:
+            - Path=/api/payments/**
+          filters:
+            - StripPrefix=0
+        - id: ms-provider
+          uri: ${PROVIDER_URL:http://ms-provider:8085}
+          predicates:
+            - Path=/api/providers/**
+          filters:
+            - StripPrefix=0
+        - id: ms-reporter
+          uri: ${REPORTER_URL:http://ms-reporter:8088}
+          predicates:
+            - Path=/api/reports/**
+          filters:
+            - StripPrefix=0
+        - id: ms-notifications
+          uri: ${NOTIFICATIONS_URL:http://ms-notifications:8087}
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - StripPrefix=0
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,gateway"
+  endpoint:
+    gateway:
+      enabled: true
