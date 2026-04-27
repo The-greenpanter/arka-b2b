@@ -11,6 +11,7 @@ public class RouterRest {
     public RouterFunction<ServerResponse> routerFunction(Handler handler) {
         return RouterFunctions.route()
                 .GET("/api/orders/{orderId}", handler::getOrder)
+                .GET("/api/orders", handler::getOrdersByCustomer)
                 .POST("/api/orders/{orderId}/complete", handler::completeOrder)
                 .build();
     }
