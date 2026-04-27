@@ -38,9 +38,17 @@ public class Stock {
 
     private String stockId;         // UUID generado por el use case
     private String productId;       // Referencia al producto en ms-catalog
+    private String providerId;      // Proveedor responsable (HU3 alert payload)
     private Integer availableQty;   // Cantidad disponible para reservar
     private Integer reservedQty;    // Cantidad ya reservada (no disponible)
     private StockStatus status;     // ACTIVE o DEPLETED
+
+    @Builder.Default
+    private Integer minimumThreshold = 10;  // HU3: umbral mínimo configurable
+
+    @Builder.Default
+    private Boolean alertSent = false;      // HU3: debounce — evita spam de alertas
+
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -146,10 +154,31 @@ public class Stock {
     }
 
     /**
+     * HU3: ¿debe emitirse alerta de stock bajo?
+     * Solo dispara si aún no se envió (debounce).
+     */
+    public boolean isLowStock() {
+        int threshold = minimumThreshold != null ? minimumThreshold : 10;
+        boolean alreadyAlerted = Boolean.TRUE.equals(alertSent);
+        return availableQty <= threshold && !alreadyAlerted;
+    }
+
+    /** HU3: marca la alerta como enviada para evitar spam. */
+    public Stock markAlertSent() {
+        this.alertSent = true;
+        this.updatedAt = Instant.now();
+        return this;
+    }
+
+    /** HU3: resetea el flag cuando el stock supera el umbral de nuevo. */
+    public Stock resetAlert() {
+        this.alertSent = false;
+        this.updatedAt = Instant.now();
+        return this;
+    }
+
+    /**
      * Inicializa el stock con cantidad cero (HU1 saga: cuando ProductValidatedEvent llega).
-     *
-     * Este es un caso especial: se crea un stock ACTIVE pero con 0 disponible y 0 reservado.
-     * En el next restock, se llenará.
      */
     public static Stock createEmpty(String stockId, String productId) {
         return Stock.builder()

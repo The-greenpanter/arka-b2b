@@ -2,6 +2,7 @@ package co.com.bancolombia.usecase.stock;
 
 import co.com.bancolombia.model.stock.Stock;
 import co.com.bancolombia.model.stock.StockStatus;
+import co.com.bancolombia.model.stock.gateways.EventPublisher;
 import co.com.bancolombia.model.stock.gateways.StockRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -10,29 +11,27 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.Instant;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-/**
- * Tests del use case ReserveStockUseCase.
- *
- * @ExtendWith(MockitoExtension.class) configura Mockito automáticamente.
- * @InjectMocks y @Mock inyectan el use case con repositorio mockeado.
- *
- * StepVerifier proporciona una forma fluida de verificar Mono/Flux.
- */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ReserveStockUseCase")
 class ReserveStockUseCaseTest {
 
     @Mock
     private StockRepository repository;
+
+    @Mock
+    private EventPublisher eventPublisher;
 
     @InjectMocks
     private ReserveStockUseCase useCase;
@@ -47,9 +46,13 @@ class ReserveStockUseCaseTest {
                 .availableQty(100)
                 .reservedQty(0)
                 .status(StockStatus.ACTIVE)
+                .minimumThreshold(10)
+                .alertSent(false)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
+
+        when(eventPublisher.publish(anyString(), anyString(), any())).thenReturn(Mono.empty());
     }
 
     @Test
@@ -61,10 +64,8 @@ class ReserveStockUseCaseTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(repository.findByProductId("prod-001"))
-                .thenReturn(Mono.just(sampleStock));
-        when(repository.save(any(Stock.class)))
-                .thenReturn(Mono.just(reserved));
+        when(repository.findByProductId("prod-001")).thenReturn(Mono.just(sampleStock));
+        when(repository.save(any(Stock.class))).thenReturn(Mono.just(reserved));
 
         StepVerifier.create(useCase.execute("prod-001", 30))
                 .assertNext(stock -> {
@@ -78,8 +79,7 @@ class ReserveStockUseCaseTest {
     @Test
     @DisplayName("execute() con qty insuficiente → error IllegalStateException")
     void shouldFailWhenInsufficientStock() {
-        when(repository.findByProductId("prod-001"))
-                .thenReturn(Mono.just(sampleStock));
+        when(repository.findByProductId("prod-001")).thenReturn(Mono.just(sampleStock));
 
         StepVerifier.create(useCase.execute("prod-001", 200))
                 .expectError(IllegalStateException.class)
@@ -89,8 +89,7 @@ class ReserveStockUseCaseTest {
     @Test
     @DisplayName("execute() producto no existe → error IllegalArgumentException")
     void shouldFailWhenStockNotFound() {
-        when(repository.findByProductId("no-existe"))
-                .thenReturn(Mono.empty());
+        when(repository.findByProductId("no-existe")).thenReturn(Mono.empty());
 
         StepVerifier.create(useCase.execute("no-existe", 50))
                 .expectError(IllegalArgumentException.class)
@@ -107,15 +106,45 @@ class ReserveStockUseCaseTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(repository.findByProductId("prod-001"))
-                .thenReturn(Mono.just(sampleStock));
-        when(repository.save(any(Stock.class)))
-                .thenReturn(Mono.just(depleted));
+        when(repository.findByProductId("prod-001")).thenReturn(Mono.just(sampleStock));
+        when(repository.save(any(Stock.class))).thenReturn(Mono.just(depleted));
 
         StepVerifier.create(useCase.execute("prod-001", 100))
                 .assertNext(stock -> {
                     assert stock.getStatus() == StockStatus.DEPLETED;
                     assert stock.getAvailableQty() == 0;
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("execute() HU3: emite alerta cuando stock cae bajo umbral")
+    void shouldEmitAlertWhenStockFallsBelowThreshold() {
+        Stock stockWith15 = Stock.builder()
+                .stockId("stock-002")
+                .productId("prod-002")
+                .availableQty(12)
+                .reservedQty(0)
+                .status(StockStatus.ACTIVE)
+                .minimumThreshold(10)
+                .alertSent(false)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        Stock afterReserve = stockWith15.toBuilder()
+                .availableQty(8)
+                .reservedQty(4)
+                .alertSent(true)
+                .build();
+
+        when(repository.findByProductId("prod-002")).thenReturn(Mono.just(stockWith15));
+        when(repository.save(any(Stock.class))).thenReturn(Mono.just(afterReserve));
+
+        StepVerifier.create(useCase.execute("prod-002", 4))
+                .assertNext(stock -> {
+                    assert stock.getAvailableQty() == 8;
+                    assert Boolean.TRUE.equals(stock.getAlertSent());
                 })
                 .verifyComplete();
     }

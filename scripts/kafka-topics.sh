@@ -14,6 +14,7 @@ TOPICS=(
   "inventory.stock-created"
   "inventory.stock-reserved"
   "inventory.stock-released"
+  "inventory.stock-low-alert"
   "cart.checkout-requested"
   "order.order-created"
   "order.order-completed"

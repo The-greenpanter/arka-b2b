@@ -39,15 +39,18 @@ public class StockResponse {
     @JsonProperty("status")
     private String status;
 
+    @JsonProperty("minimumThreshold")
+    private Integer minimumThreshold;
+
+    @JsonProperty("alertSent")
+    private Boolean alertSent;
+
     @JsonProperty("createdAt")
     private Instant createdAt;
 
     @JsonProperty("updatedAt")
     private Instant updatedAt;
 
-    /**
-     * Mapea dominio a DTO.
-     */
     public static StockResponse fromDomain(Stock stock) {
         return StockResponse.builder()
                 .stockId(stock.getStockId())
@@ -56,6 +59,8 @@ public class StockResponse {
                 .reservedQty(stock.getReservedQty())
                 .totalQty(stock.getAvailableQty() + stock.getReservedQty())
                 .status(stock.getStatus().name())
+                .minimumThreshold(stock.getMinimumThreshold())
+                .alertSent(stock.getAlertSent())
                 .createdAt(stock.getCreatedAt())
                 .updatedAt(stock.getUpdatedAt())
                 .build();

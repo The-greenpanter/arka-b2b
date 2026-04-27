@@ -21,7 +21,7 @@ public class MultiEventConsumer {
     private final SendNotificationUseCase sendNotificationUseCase;
 
     @KafkaListener(
-            topics = "order.order-created,order.order-completed,payment.payment-processed,payment.payment-failed",
+            topics = "order.order-created,order.order-completed,payment.payment-processed,payment.payment-failed,inventory.stock-low-alert",
             groupId = "ms-notifications",
             containerFactory = "notificationsKafkaListenerContainerFactory"
     )
@@ -56,6 +56,7 @@ public class MultiEventConsumer {
             case "order.order-completed" -> NotificationType.ORDER_COMPLETED;
             case "payment.payment-processed" -> NotificationType.PAYMENT_PROCESSED;
             case "payment.payment-failed" -> NotificationType.PAYMENT_FAILED;
+            case "inventory.stock-low-alert" -> NotificationType.STOCK_LOW_ALERT;
             default -> NotificationType.ORDER_CREATED;
         };
     }
@@ -66,6 +67,7 @@ public class MultiEventConsumer {
             case "order.order-completed" -> "Your order " + aggregateId + " has been completed";
             case "payment.payment-processed" -> "Payment for order " + aggregateId + " was processed successfully";
             case "payment.payment-failed" -> "Payment for order " + aggregateId + " failed";
+            case "inventory.stock-low-alert" -> "[URGENT] Stock crítico para producto " + aggregateId + ". Iniciar reabastecimiento.";
             default -> "Event received for " + aggregateId;
         };
     }

@@ -24,17 +24,23 @@ public class StockRequest {
     @JsonProperty("productId")
     private String productId;
 
+    @JsonProperty("providerId")
+    private String providerId;
+
     @JsonProperty("quantity")
     private Integer quantity;
 
-    /**
-     * Mapea DTO a dominio para crear un stock vacío.
-     */
+    @JsonProperty("minimumThreshold")
+    private Integer minimumThreshold;
+
     public Stock toDomain() {
         return Stock.builder()
                 .productId(this.productId)
+                .providerId(this.providerId)
                 .availableQty(0)
                 .reservedQty(0)
+                .minimumThreshold(this.minimumThreshold != null ? this.minimumThreshold : 10)
+                .alertSent(false)
                 .build();
     }
 }

@@ -1,40 +1,53 @@
 package co.com.bancolombia.usecase.stock;
 
 import co.com.bancolombia.model.stock.Stock;
+import co.com.bancolombia.model.stock.StockLowAlertEvent;
+import co.com.bancolombia.model.stock.gateways.EventPublisher;
 import co.com.bancolombia.model.stock.gateways.StockRepository;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
+
 /**
  * Use case: reserva una cantidad de stock para un producto.
  *
- * Esta es la operación crítica en HU2 (Ordering): cuando un cliente
- * crea una orden, el inventario debe reservar la cantidad solicitada.
- *
- * La reserva es una promesa: "esta cantidad está apartada para ti".
- * Si luego el pago falla o la orden se cancela, la reserva se libera.
- *
- * Analogía biológica: el "receptor" ocupa neurotransmisores (binding),
- * lo que evita que otros receptores los usen. Si la señal se cancela,
- * se liberan.
+ * HU3: después de cada reserva comprueba si el stock cae bajo el umbral.
+ * Si sí, emite inventory.stock-low-alert (una sola vez por ciclo, debounced por alertSent).
  */
 @RequiredArgsConstructor
 public class ReserveStockUseCase {
 
     private final StockRepository repository;
+    private final EventPublisher eventPublisher;
 
-    /**
-     * @param productId el ID del producto
-     * @param quantity la cantidad a reservar
-     * @return Mono<Stock> con el stock actualizado tras la reserva
-     * @throws IllegalArgumentException si no existe stock
-     * @throws IllegalStateException si no hay suficiente disponible o está DEPLETED
-     */
     public Mono<Stock> execute(String productId, Integer quantity) {
         return repository.findByProductId(productId)
                 .switchIfEmpty(Mono.error(
                         new IllegalArgumentException("Stock not found for product: " + productId)))
-                .map(stock -> stock.reserve(quantity))
-                .flatMap(repository::save);
+                .flatMap(stock -> {
+                    stock.reserve(quantity);
+                    boolean shouldAlert = stock.isLowStock();
+                    if (shouldAlert) {
+                        stock.markAlertSent();
+                    }
+                    return repository.save(stock)
+                            .flatMap(saved -> {
+                                if (shouldAlert) {
+                                    StockLowAlertEvent event = StockLowAlertEvent.builder()
+                                            .productId(saved.getProductId())
+                                            .providerId(saved.getProviderId())
+                                            .currentStock(saved.getAvailableQty())
+                                            .minimumThreshold(saved.getMinimumThreshold())
+                                            .triggerReason("ORDER_RESERVATION")
+                                            .timestamp(Instant.now())
+                                            .build();
+                                    return eventPublisher
+                                            .publish("inventory.stock-low-alert", saved.getProductId(), event)
+                                            .thenReturn(saved);
+                                }
+                                return Mono.just(saved);
+                            });
+                });
     }
 }

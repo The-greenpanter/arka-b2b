@@ -43,37 +43,46 @@ public class StockEntity {
     @Column("status")
     private String status;
 
+    @Column("provider_id")
+    private String providerId;
+
+    @Column("minimum_threshold")
+    private Integer minimumThreshold;
+
+    @Column("alert_sent")
+    private Boolean alertSent;
+
     @Column("created_at")
     private Instant createdAt;
 
     @Column("updated_at")
     private Instant updatedAt;
 
-    /**
-     * Mapea dominio → entidad (para guardar).
-     */
     public static StockEntity fromDomain(Stock stock) {
         return StockEntity.builder()
                 .stockId(stock.getStockId())
                 .productId(stock.getProductId())
+                .providerId(stock.getProviderId())
                 .availableQty(stock.getAvailableQty())
                 .reservedQty(stock.getReservedQty())
-                .status(stock.getStatus().name())
+                .status(stock.getStatus() != null ? stock.getStatus().name() : StockStatus.ACTIVE.name())
+                .minimumThreshold(stock.getMinimumThreshold() != null ? stock.getMinimumThreshold() : 10)
+                .alertSent(stock.getAlertSent() != null ? stock.getAlertSent() : false)
                 .createdAt(stock.getCreatedAt())
                 .updatedAt(stock.getUpdatedAt())
                 .build();
     }
 
-    /**
-     * Mapea entidad → dominio (para recuperar).
-     */
     public Stock toDomain() {
         return Stock.builder()
                 .stockId(this.stockId)
                 .productId(this.productId)
+                .providerId(this.providerId)
                 .availableQty(this.availableQty)
                 .reservedQty(this.reservedQty)
                 .status(StockStatus.valueOf(this.status))
+                .minimumThreshold(this.minimumThreshold != null ? this.minimumThreshold : 10)
+                .alertSent(this.alertSent != null ? this.alertSent : false)
                 .createdAt(this.createdAt)
                 .updatedAt(this.updatedAt)
                 .build();
