@@ -1,0 +1,360 @@
+## ARKA B2B — Infraestructura completa
+## Docker Compose levanta: Kafka KRaft, MongoDB, PostgreSQL, LocalStack, 9 ms, frontend
+## Uso: docker compose up -d
+## VPS: 7.8GB RAM — stack completo usa ~3.5GB con heap tuning
+
+services:
+
+  # ----------------------------------------------------------------------------
+  # KAFKA KRaft mode (sin Zookeeper desde Kafka 3.3+)
+  # FIX: KAFKA_ADVERTISED_LISTENERS usa kafka:9092 (interno Docker)
+  # para que los microservicios puedan resolver el broker correctamente.
+  # ----------------------------------------------------------------------------
+  kafka:
+    image: apache/kafka:3.8.0
+    container_name: arka-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_HEAP_OPTS: "-Xmx256m -Xms128m"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - arka-net
+
+  # UI web para inspeccionar topics, consumers, mensajes — útil en la demo
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: arka-kafka-ui
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: arka-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - arka-net
+
+  # ----------------------------------------------------------------------------
+  # LOCALSTACK — Simula servicios AWS (S3, SQS, SNS)
+  # Narrativa expo: "En producción, Kafka → AWS MSK, PostgreSQL → AWS RDS,
+  # almacenamiento → AWS S3. Solo cambia la URL en variables de entorno."
+  # ----------------------------------------------------------------------------
+  localstack:
+    image: localstack/localstack:3.8
+    container_name: arka-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3,sqs,sns
+      DEBUG: "0"
+      PERSISTENCE: "1"
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - arka-net
+
+  # ----------------------------------------------------------------------------
+  # MONGODB — catalog, cart (documentos flexibles)
+  # ----------------------------------------------------------------------------
+  mongodb:
+    image: mongo:7
+    container_name: arka-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: arka
+      MONGO_INITDB_ROOT_PASSWORD: arka123
+      MONGO_INITDB_DATABASE: arka_catalog
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/arka_catalog --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - arka-net
+
+  # ----------------------------------------------------------------------------
+  # POSTGRESQL — inventory, order, payment, provider (ACID transaccional)
+  # ----------------------------------------------------------------------------
+  postgresql:
+    image: postgres:16-alpine
+    container_name: arka-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: arka
+      POSTGRES_PASSWORD: arka123
+      POSTGRES_MULTIPLE_DATABASES: arka_inventory,arka_order,arka_payment,arka_provider,arka_reporter
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-multiple-postgres-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-postgres-dbs.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arka"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - arka-net
+
+  # ----------------------------------------------------------------------------
+  # TRAEFIK — reverse proxy dinámico
+  # ----------------------------------------------------------------------------
+  traefik:
+    image: traefik:v3.1
+    container_name: arka-traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "8070:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - arka-net
+
+  # --- Microservices (JAVA_OPTS limita heap para demo en VPS) ---
+
+  ms-catalog:
+    build:
+      context: ./ms-catalog
+      dockerfile: Dockerfile
+    container_name: arka-ms-catalog
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      MONGODB_URI: mongodb://arka:arka123@mongodb:27017/arka_catalog
+      SPRING_DATA_MONGODB_URI: mongodb://arka:arka123@mongodb:27017/arka_catalog
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ARKA_CATALOG_USE_IN_MEMORY_REPOSITORY: "false"
+      ARKA_CATALOG_USE_IN_MEMORY_BROKER: "false"
+      JAVA_OPTS: "-Xmx192m -Xms64m"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.catalog.rule=Host(`catalog.localhost`)"
+    networks:
+      - arka-net
+
+  ms-inventory:
+    build:
+      context: ./ms-inventory
+      dockerfile: Dockerfile
+    container_name: arka-ms-inventory
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      R2DBC_URL: r2dbc:postgresql://postgresql:5432/arka_inventory
+      DB_USER: arka
+      DB_PASSWORD: arka123
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ARKA_INVENTORY_USE_IN_MEMORY_REPOSITORY: "false"
+      ARKA_INVENTORY_USE_IN_MEMORY_BROKER: "false"
+      JAVA_OPTS: "-Xmx192m -Xms64m"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgresql:
+        condition: service_healthy
+    networks:
+      - arka-net
+
+  ms-provider:
+    build:
+      context: ./ms-provider
+      dockerfile: Dockerfile
+    container_name: arka-ms-provider
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JAVA_OPTS: "-Xmx192m -Xms64m"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - arka-net
+
+  ms-cart:
+    build:
+      context: ./ms-cart
+      dockerfile: Dockerfile
+    container_name: arka-ms-cart
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      MONGODB_URI: mongodb://arka:arka123@mongodb:27017/arka_cart
+      SPRING_DATA_MONGODB_URI: mongodb://arka:arka123@mongodb:27017/arka_cart
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JAVA_OPTS: "-Xmx192m -Xms64m"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - arka-net
+
+  ms-order:
+    build:
+      context: ./ms-order
+      dockerfile: Dockerfile
+    container_name: arka-ms-order
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      R2DBC_URL: r2dbc:postgresql://postgresql:5432/arka_order
+      DB_USER: arka
+      DB_PASSWORD: arka123
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JAVA_OPTS: "-Xmx192m -Xms64m"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgresql:
+        condition: service_healthy
+    networks:
+      - arka-net
+
+  ms-payment:
+    build:
+      context: ./ms-payment
+      dockerfile: Dockerfile
+    container_name: arka-ms-payment
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      R2DBC_URL: r2dbc:postgresql://postgresql:5432/arka_payment
+      DB_USER: arka
+      DB_PASSWORD: arka123
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JAVA_OPTS: "-Xmx192m -Xms64m"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgresql:
+        condition: service_healthy
+    networks:
+      - arka-net
+
+  ms-notifications:
+    build:
+      context: ./ms-notifications
+      dockerfile: Dockerfile
+    container_name: arka-ms-notifications
+    ports:
+      - "8087:8087"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JAVA_OPTS: "-Xmx128m -Xms48m"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - arka-net
+
+  ms-reporter:
+    build:
+      context: ./ms-reporter
+      dockerfile: Dockerfile
+    container_name: arka-ms-reporter
+    ports:
+      - "8088:8088"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      R2DBC_URL: r2dbc:postgresql://postgresql:5432/arka_reporter
+      DB_USER: arka
+      DB_PASSWORD: arka123
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JAVA_OPTS: "-Xmx128m -Xms48m"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgresql:
+        condition: service_healthy
+    networks:
+      - arka-net
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: arka-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      CATALOG_URL: http://ms-catalog:8081
+      INVENTORY_URL: http://ms-inventory:8082
+      ORDER_URL: http://ms-order:8083
+      PAYMENT_URL: http://ms-payment:8084
+      PROVIDER_URL: http://ms-provider:8085
+      CART_URL: http://ms-cart:8086
+      JAVA_OPTS: "-Xmx128m -Xms48m"
+    depends_on:
+      - ms-catalog
+      - ms-inventory
+      - ms-order
+      - ms-cart
+    networks:
+      - arka-net
+
+  # ----------------------------------------------------------------------------
+  # FRONTEND — Vue 3 + Vite compilado, servido por nginx
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./arka-frontend
+      dockerfile: Dockerfile
+    container_name: arka-frontend
+    ports:
+      - "3000:80"
+    environment:
+      VITE_API_URL: http://api-gateway:8080
+    depends_on:
+      - api-gateway
+    networks:
+      - arka-net
+
+volumes:
+  mongodb_data:
+  postgres_data:
+  localstack_data:
+
+networks:
+  arka-net:
+    driver: bridge

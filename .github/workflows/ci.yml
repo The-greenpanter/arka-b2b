@@ -1,0 +1,212 @@
+name: ARKA B2B CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-ms-catalog:
+    name: Test ms-catalog
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ms-catalog
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+      - name: Test (exclude mongo-repository)
+        run: ./gradlew :model:test :usecase:test :reactive-web:test --no-daemon
+
+  test-ms-inventory:
+    name: Test ms-inventory
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ms-inventory
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+      - name: Test
+        run: ./gradlew :model:test :usecase:test :reactive-web:test --no-daemon
+
+  test-ms-provider:
+    name: Test ms-provider
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ms-provider
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+      - name: Test
+        run: ./gradlew :model:test :usecase:test --no-daemon
+
+  test-ms-cart:
+    name: Test ms-cart
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ms-cart
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+      - name: Test
+        run: ./gradlew :model:test :usecase:test --no-daemon
+
+  test-ms-order:
+    name: Test ms-order
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ms-order
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+      - name: Test
+        run: ./gradlew :model:test :usecase:test --no-daemon
+
+  test-ms-payment:
+    name: Test ms-payment
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ms-payment
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+      - name: Test
+        run: ./gradlew :model:test :usecase:test --no-daemon
+
+  test-ms-notifications:
+    name: Test ms-notifications
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ms-notifications
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+      - name: Test
+        run: ./gradlew :model:test :usecase:test --no-daemon
+
+  test-ms-reporter:
+    name: Test ms-reporter
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ms-reporter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+      - name: Test
+        run: ./gradlew :model:test :usecase:test --no-daemon
+
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [test-ms-catalog, test-ms-inventory, test-ms-provider, test-ms-cart, test-ms-order, test-ms-payment, test-ms-notifications, test-ms-reporter]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build ms-catalog image
+        run: docker build -t arka/ms-catalog:${{ github.sha }} ./ms-catalog
+      - name: Build ms-inventory image
+        run: docker build -t arka/ms-inventory:${{ github.sha }} ./ms-inventory
+      - name: Build ms-provider image
+        run: docker build -t arka/ms-provider:${{ github.sha }} ./ms-provider
+      - name: Build ms-cart image
+        run: docker build -t arka/ms-cart:${{ github.sha }} ./ms-cart
+      - name: Build ms-order image
+        run: docker build -t arka/ms-order:${{ github.sha }} ./ms-order
+      - name: Build ms-payment image
+        run: docker build -t arka/ms-payment:${{ github.sha }} ./ms-payment
+      - name: Build ms-notifications image
+        run: docker build -t arka/ms-notifications:${{ github.sha }} ./ms-notifications
+      - name: Build ms-reporter image
+        run: docker build -t arka/ms-reporter:${{ github.sha }} ./ms-reporter
+      - name: Build api-gateway image
+        run: docker build -t arka/api-gateway:${{ github.sha }} ./api-gateway

@@ -1,0 +1,17 @@
+server:
+  port: 8085
+spring:
+  application:
+    name: "ms-provider"
+  devtools:
+    add-properties: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ms-provider
+      auto-offset-reset: earliest
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"

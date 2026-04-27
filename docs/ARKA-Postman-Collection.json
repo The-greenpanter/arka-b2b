@@ -1,0 +1,277 @@
+{
+  "info": {
+    "name": "ARKA B2B — Microservicios",
+    "description": "Colección completa de endpoints ARKA B2B. Configura la variable BASE_URL según el entorno:\n- Local: http://localhost:8080\n- VPS: http://187.77.192.190:8080",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "BASE_URL", "value": "http://localhost:8080", "type": "string" },
+    { "key": "productId", "value": "", "type": "string" },
+    { "key": "cartId",    "value": "", "type": "string" },
+    { "key": "orderId",   "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "ms-catalog — Productos",
+      "item": [
+        {
+          "name": "HU1 — Crear producto (inicia saga)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.productId) pm.collectionVariables.set('productId', json.productId);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Estado VALIDANDO_PROVEEDOR', () => pm.expect(json.status).to.eql('VALIDANDO_PROVEEDOR'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{BASE_URL}}/api/v1/products",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Monitor 4K UltraWide\",\n  \"category\": \"MONITORES\",\n  \"basePriceUsd\": 599.99,\n  \"taxRate\": 0.19,\n  \"minOrderQty\": 1,\n  \"maxOrderQty\": 100,\n  \"supplier\": {\n    \"supplierId\": \"sup-001\",\n    \"name\": \"DisplayCorp S.A.\",\n    \"leadTimeDays\": 14\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Obtener producto por ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Tiene productId', () => pm.expect(json.productId).to.be.a('string'));",
+                  "console.log('Estado actual:', json.status);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/api/v1/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Listar todos los productos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Es array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/api/v1/products"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ms-inventory — Stock",
+      "item": [
+        {
+          "name": "Obtener stock de un producto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Tiene availableQty', () => pm.expect(json.availableQty).to.be.a('number'));",
+                  "console.log('Stock disponible:', json.availableQty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/api/v1/stock/{{productId}}"
+          }
+        },
+        {
+          "name": "Ajustar stock manualmente",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{BASE_URL}}/api/v1/stock/{{productId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delta\": 50,\n  \"reason\": \"Carga inicial de inventario\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ms-cart — Carrito",
+      "item": [
+        {
+          "name": "Crear carrito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.cartId) pm.collectionVariables.set('cartId', json.cartId);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{BASE_URL}}/api/v1/carts",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"cust-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Agregar ítem al carrito",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{BASE_URL}}/api/v1/carts/{{cartId}}/items",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 2,\n  \"unitPriceUsd\": 599.99\n}"
+            }
+          }
+        },
+        {
+          "name": "Obtener carrito",
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/api/v1/carts/{{cartId}}"
+          }
+        },
+        {
+          "name": "Checkout (HU4 — inicia saga de pedido)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 o 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]));",
+                  "const json = pm.response.json();",
+                  "if (json.orderId) pm.collectionVariables.set('orderId', json.orderId);",
+                  "console.log('Pedido creado:', json.orderId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{BASE_URL}}/api/v1/carts/{{cartId}}/checkout"
+          }
+        },
+        {
+          "name": "Eliminar ítem del carrito",
+          "request": {
+            "method": "DELETE",
+            "url": "{{BASE_URL}}/api/v1/carts/{{cartId}}/items/{{productId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ms-order — Pedidos",
+      "item": [
+        {
+          "name": "Obtener pedido",
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/api/v1/orders/{{orderId}}"
+          }
+        },
+        {
+          "name": "Listar pedidos",
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/api/v1/orders"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ms-payment — Pagos",
+      "item": [
+        {
+          "name": "Obtener pago por pedido",
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/api/v1/payments/order/{{orderId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ms-provider — Proveedores",
+      "item": [
+        {
+          "name": "Listar proveedores",
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/api/v1/providers"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ms-reporter — Reportes",
+      "item": [
+        {
+          "name": "Listar todos los eventos (event store)",
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/api/v1/events"
+          }
+        },
+        {
+          "name": "Eventos por tipo",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/events?type=catalog.product-validated",
+              "query": [{ "key": "type", "value": "catalog.product-validated" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health checks",
+      "item": [
+        {
+          "name": "API Gateway health",
+          "request": { "method": "GET", "url": "{{BASE_URL}}/actuator/health" }
+        },
+        {
+          "name": "ms-catalog health",
+          "request": { "method": "GET", "url": "http://localhost:8081/actuator/health" }
+        },
+        {
+          "name": "ms-inventory health",
+          "request": { "method": "GET", "url": "http://localhost:8082/actuator/health" }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+// Domain model: solo Reactor + Lombok. Sin Spring, sin Mongo, sin JPA.
+dependencies {
+    // (Reactor y Lombok ya vienen del build.gradle raíz)
+}

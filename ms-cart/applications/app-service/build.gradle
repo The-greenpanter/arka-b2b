@@ -1,0 +1,16 @@
+apply plugin: 'org.springframework.boot'
+
+dependencies {
+    implementation project(':reactive-web')
+    implementation project(':model')
+    implementation project(':usecase')
+    implementation project(':mongo-repository')
+    implementation project(':kafka-producer')
+    implementation 'org.springframework.boot:spring-boot-starter'
+    runtimeOnly('org.springframework.boot:spring-boot-devtools')
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.projectreactor:reactor-test'
+}
+
+jar { enabled = false }
+bootJar { archiveFileName = "${rootProject.name}.${archiveExtension.get()}" }

@@ -1,0 +1,28 @@
+# Node
+node_modules/
+**/node_modules/
+npm-debug.log*
+
+# Build outputs
+**/build/
+**/.gradle/
+**/build-cache/
+**/*.jar
+**/*.class
+
+# IDE
+**/.idea/
+**/*.iml
+**/.vscode/
+
+# Docker volumes / runtime
+localstack_data/
+mongodb_data/
+postgres_data/
+
+# Logs
+**/*.log
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,9 @@
+spring:
+  mongodb:
+    uri: mongodb://arka:arka123@mongodb:27017/arka_cart?authSource=admin
+  kafka:
+    bootstrap-servers: kafka:9092
+arka:
+  cart:
+    use-in-memory-repository: false
+    use-in-memory-broker: false
