@@ -1,277 +1,695 @@
 {
   "info": {
     "name": "ARKA B2B — Microservicios",
-    "description": "Colección completa de endpoints ARKA B2B. Configura la variable BASE_URL según el entorno:\n- Local: http://localhost:8080\n- VPS: http://187.77.192.190:8080",
+    "_postman_id": "arka-b2b-v2",
+    "description": "Colección completa ARKA B2B. Configura BASE_URL = http://arka-alb-1673054971.us-east-1.elb.amazonaws.com",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [
-    { "key": "BASE_URL", "value": "http://localhost:8080", "type": "string" },
-    { "key": "productId", "value": "", "type": "string" },
-    { "key": "cartId",    "value": "", "type": "string" },
-    { "key": "orderId",   "value": "", "type": "string" }
-  ],
   "item": [
     {
-      "name": "ms-catalog — Productos",
+      "name": "🩺 Health Checks",
+      "item": [
+        {
+          "name": "API Gateway health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/actuator/health",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "actuator",
+                "health"
+              ]
+            },
+            "description": "Verifica que el gateway esté UP"
+          },
+          "response": []
+        },
+        {
+          "name": "ms-catalog health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/actuator/health",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "actuator",
+                "health"
+              ]
+            },
+            "description": "Vía gateway — mismo endpoint"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🏭 ms-provider — Proveedores",
+      "item": [
+        {
+          "name": "Crear proveedor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/providers",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "providers"
+              ]
+            },
+            "description": "Registra un proveedor. Retorna 201 con providerId UUID.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"TechCorp Colombia\",\n  \"contactEmail\": \"ventas@techcorp.co\",\n  \"phone\": \"+573001234567\",\n  \"leadTimeDays\": 5,\n  \"active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar proveedores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/providers",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "providers"
+              ]
+            },
+            "description": "Retorna lista de todos los proveedores registrados."
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener proveedor por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/providers/{providerId}",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "providers",
+                "{providerId}"
+              ]
+            },
+            "description": "Reemplaza {{providerId}} con el UUID retornado en la creación."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📦 ms-catalog — Productos (HU1)",
       "item": [
         {
           "name": "HU1 — Crear producto (inicia saga)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const json = pm.response.json();",
-                  "if (json.productId) pm.collectionVariables.set('productId', json.productId);",
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
-                  "pm.test('Estado VALIDANDO_PROVEEDOR', () => pm.expect(json.status).to.eql('VALIDANDO_PROVEEDOR'));"
-                ]
-              }
-            }
-          ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": "{{BASE_URL}}/api/v1/products",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/products",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products"
+              ]
+            },
+            "description": "Crea producto en estado PENDING. Dispara saga: Kafka → ms-inventory crea stock → ms-provider valida proveedor → producto queda ACTIVE.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Monitor 4K UltraWide\",\n  \"category\": \"MONITORES\",\n  \"basePriceUsd\": 599.99,\n  \"taxRate\": 0.19,\n  \"minOrderQty\": 1,\n  \"maxOrderQty\": 100,\n  \"supplier\": {\n    \"supplierId\": \"sup-001\",\n    \"name\": \"DisplayCorp S.A.\",\n    \"leadTimeDays\": 14\n  }\n}"
-            }
-          }
-        },
-        {
-          "name": "Obtener producto por ID",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('Tiene productId', () => pm.expect(json.productId).to.be.a('string'));",
-                  "console.log('Estado actual:', json.status);"
-                ]
+              "raw": "{\n  \"name\": \"Laptop ThinkPad X1\",\n  \"description\": \"Laptop empresarial 14 pulgadas, Intel i7, 16GB RAM\",\n  \"category\": \"ELECTRONICS\",\n  \"basePriceUsd\": 1200.0,\n  \"taxRate\": 0.19,\n  \"minOrderQty\": 1,\n  \"maxOrderQty\": 50,\n  \"supplier\": {\n    \"supplierId\": \"{{providerId}}\",\n    \"name\": \"TechCorp Colombia\",\n    \"leadTimeDays\": 5\n  },\n  \"attributes\": {\n    \"brand\": \"Lenovo\",\n    \"color\": \"Negro\",\n    \"weight_kg\": 1.4\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
               }
             }
-          ],
-          "request": {
-            "method": "GET",
-            "url": "{{BASE_URL}}/api/v1/products/{{productId}}"
-          }
+          },
+          "response": []
         },
         {
           "name": "Listar todos los productos",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Es array', () => pm.expect(pm.response.json()).to.be.an('array'));"
-                ]
-              }
-            }
-          ],
           "request": {
             "method": "GET",
-            "url": "{{BASE_URL}}/api/v1/products"
-          }
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/products",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products"
+              ]
+            },
+            "description": "Lista productos. Filtros opcionales: ?status=ACTIVE ?category=ELECTRONICS"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar productos ACTIVE",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/products?status=ACTIVE",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products?status=ACTIVE"
+              ]
+            },
+            "description": "Solo productos activos (saga completada exitosamente)."
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener producto por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/products/{productId}",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products",
+                "{productId}"
+              ]
+            },
+            "description": "Reemplaza {{productId}} con el UUID del producto creado."
+          },
+          "response": []
+        },
+        {
+          "name": "Confirmar producto manualmente",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/products/{productId}/confirm",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products",
+                "{productId}",
+                "confirm"
+              ]
+            },
+            "description": "Atajo para confirmar un producto PENDING sin esperar la saga completa. Útil para demo."
+          },
+          "response": []
         }
       ]
     },
     {
-      "name": "ms-inventory — Stock",
+      "name": "📊 ms-inventory — Stock (HU2, HU3)",
       "item": [
         {
-          "name": "Obtener stock de un producto",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('Tiene availableQty', () => pm.expect(json.availableQty).to.be.a('number'));",
-                  "console.log('Stock disponible:', json.availableQty);"
-                ]
+          "name": "Crear stock manualmente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
               }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": "{{BASE_URL}}/api/v1/stock/{{productId}}"
-          }
-        },
-        {
-          "name": "Ajustar stock manualmente",
-          "request": {
-            "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": "{{BASE_URL}}/api/v1/stock/{{productId}}",
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/stocks",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "stocks"
+              ]
+            },
+            "description": "Normalmente lo crea la saga (HU1). Úsalo si necesitas crear stock manualmente para demo.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"delta\": 50,\n  \"reason\": \"Carga inicial de inventario\"\n}"
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"providerId\": \"{{providerId}}\",\n  \"minimumThreshold\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
-          }
+          },
+          "response": []
+        },
+        {
+          "name": "Ver stock de producto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/stocks/{productId}",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "stocks",
+                "{productId}"
+              ]
+            },
+            "description": "Muestra availableQty, reservedQty, minimumThreshold y alertSent."
+          },
+          "response": []
+        },
+        {
+          "name": "HU2 — Reabastecer stock (restock)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/stocks/{productId}/restock",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "stocks",
+                "{productId}",
+                "restock"
+              ]
+            },
+            "description": "Agrega 100 unidades al stock disponible. Puede desactivar alerta si estaba activa.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reservar stock",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/stocks/{productId}/reserve",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "stocks",
+                "{productId}",
+                "reserve"
+              ]
+            },
+            "description": "Reserva 2 unidades (parte del flujo de checkout). Retorna 409 si no hay suficiente stock.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
         }
       ]
     },
     {
-      "name": "ms-cart — Carrito",
+      "name": "🛒 ms-cart — Carrito (HU4, HU8)",
       "item": [
         {
-          "name": "Crear carrito",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const json = pm.response.json();",
-                  "if (json.cartId) pm.collectionVariables.set('cartId', json.cartId);",
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
-                ]
+          "name": "HU8 — Agregar ítem al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/carts/cliente-001/items",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "cliente-001",
+                "items"
+              ]
+            },
+            "description": "Crea carrito si no existe para cliente-001 y agrega el ítem. El carrito se identifica por customerId.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"productName\": \"Laptop ThinkPad X1\",\n  \"quantity\": 2,\n  \"unitPrice\": 1200.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": "{{BASE_URL}}/api/v1/carts",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"customerId\": \"cust-001\"\n}"
-            }
-          }
-        },
-        {
-          "name": "Agregar ítem al carrito",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": "{{BASE_URL}}/api/v1/carts/{{cartId}}/items",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 2,\n  \"unitPriceUsd\": 599.99\n}"
-            }
-          }
+          },
+          "response": []
         },
         {
           "name": "Obtener carrito",
           "request": {
             "method": "GET",
-            "url": "{{BASE_URL}}/api/v1/carts/{{cartId}}"
-          }
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/carts/{cartId}",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "{cartId}"
+              ]
+            },
+            "description": "Reemplaza {{cartId}} con el ID retornado en addItem. Muestra ítems y total."
+          },
+          "response": []
         },
         {
-          "name": "Checkout (HU4 — inicia saga de pedido)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200 o 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]));",
-                  "const json = pm.response.json();",
-                  "if (json.orderId) pm.collectionVariables.set('orderId', json.orderId);",
-                  "console.log('Pedido creado:', json.orderId);"
-                ]
-              }
-            }
-          ],
+          "name": "HU4 — Checkout (inicia saga de pedido)",
           "request": {
             "method": "POST",
-            "url": "{{BASE_URL}}/api/v1/carts/{{cartId}}/checkout"
-          }
-        },
-        {
-          "name": "Eliminar ítem del carrito",
-          "request": {
-            "method": "DELETE",
-            "url": "{{BASE_URL}}/api/v1/carts/{{cartId}}/items/{{productId}}"
-          }
-        }
-      ]
-    },
-    {
-      "name": "ms-order — Pedidos",
-      "item": [
-        {
-          "name": "Obtener pedido",
-          "request": {
-            "method": "GET",
-            "url": "{{BASE_URL}}/api/v1/orders/{{orderId}}"
-          }
-        },
-        {
-          "name": "Listar pedidos",
-          "request": {
-            "method": "GET",
-            "url": "{{BASE_URL}}/api/v1/orders"
-          }
-        }
-      ]
-    },
-    {
-      "name": "ms-payment — Pagos",
-      "item": [
-        {
-          "name": "Obtener pago por pedido",
-          "request": {
-            "method": "GET",
-            "url": "{{BASE_URL}}/api/v1/payments/order/{{orderId}}"
-          }
-        }
-      ]
-    },
-    {
-      "name": "ms-provider — Proveedores",
-      "item": [
-        {
-          "name": "Listar proveedores",
-          "request": {
-            "method": "GET",
-            "url": "{{BASE_URL}}/api/v1/providers"
-          }
-        }
-      ]
-    },
-    {
-      "name": "ms-reporter — Reportes",
-      "item": [
-        {
-          "name": "Listar todos los eventos (event store)",
-          "request": {
-            "method": "GET",
-            "url": "{{BASE_URL}}/api/v1/events"
-          }
-        },
-        {
-          "name": "Eventos por tipo",
-          "request": {
-            "method": "GET",
+            "header": [],
             "url": {
-              "raw": "{{BASE_URL}}/api/v1/events?type=catalog.product-validated",
-              "query": [{ "key": "type", "value": "catalog.product-validated" }]
-            }
-          }
+              "raw": "{{BASE_URL}}/api/carts/{cartId}/checkout",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "{cartId}",
+                "checkout"
+              ]
+            },
+            "description": "Convierte el carrito en orden. Dispara saga: Kafka → ms-inventory reserva stock → ms-order crea orden → ms-payment procesa pago → ms-notifications notifica."
+          },
+          "response": []
         }
       ]
     },
     {
-      "name": "Health checks",
+      "name": "📋 ms-order — Órdenes (HU4, HU5)",
       "item": [
         {
-          "name": "API Gateway health",
-          "request": { "method": "GET", "url": "{{BASE_URL}}/actuator/health" }
+          "name": "HU5 — Historial de órdenes del cliente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/orders?customerId=cliente-001&page=0&size=10",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "orders?customerId=cliente-001&page=0&size=10"
+              ]
+            },
+            "description": "Lista órdenes paginadas de un cliente. customerId es obligatorio."
+          },
+          "response": []
         },
         {
-          "name": "ms-catalog health",
-          "request": { "method": "GET", "url": "http://localhost:8081/actuator/health" }
+          "name": "Obtener orden por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/orders/{orderId}",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{orderId}"
+              ]
+            },
+            "description": "Detalle de una orden específica. Reemplaza {{orderId}} con el UUID."
+          },
+          "response": []
         },
         {
-          "name": "ms-inventory health",
-          "request": { "method": "GET", "url": "http://localhost:8082/actuator/health" }
+          "name": "Completar orden manualmente",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/orders/{orderId}/complete",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{orderId}",
+                "complete"
+              ]
+            },
+            "description": "Marca la orden como completada. Retorna 409 si ya está en estado final."
+          },
+          "response": []
         }
       ]
+    },
+    {
+      "name": "💳 ms-payment — Pagos (HU4)",
+      "item": [
+        {
+          "name": "Obtener pago por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/payments/{paymentId}",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "{paymentId}"
+              ]
+            },
+            "description": "Consulta el estado de un pago. El paymentId lo genera la saga automáticamente."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📈 ms-reporter — Event Store (HU7)",
+      "item": [
+        {
+          "name": "HU7 — Eventos por tipo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/reports/events/type/product-created",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "events",
+                "type",
+                "product-created"
+              ]
+            },
+            "description": "Lista todos los eventos de dominio del tipo 'product-created'. Tipos disponibles: product-created, stock-created, stock-reserved, order-created, payment-processed."
+          },
+          "response": []
+        },
+        {
+          "name": "Eventos por tipo: order-created",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/reports/events/type/order-created",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "events",
+                "type",
+                "order-created"
+              ]
+            },
+            "description": "Muestra todos los eventos de creación de órdenes en el event store."
+          },
+          "response": []
+        },
+        {
+          "name": "Eventos por tipo: payment-processed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/reports/events/type/payment-processed",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "events",
+                "type",
+                "payment-processed"
+              ]
+            },
+            "description": "Muestra todos los eventos de pagos procesados."
+          },
+          "response": []
+        },
+        {
+          "name": "Eventos de un agregado específico",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/reports/events/aggregate/{productId}",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "events",
+                "aggregate",
+                "{productId}"
+              ]
+            },
+            "description": "Todos los eventos asociados a un ID de agregado (producto, orden, etc.). Muestra el historial completo del aggregate."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔔 ms-notifications — Notificaciones (HU6)",
+      "item": [
+        {
+          "name": "Health check notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/notifications/health",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "health"
+              ]
+            },
+            "description": "Verifica que ms-notifications esté activo. Las notificaciones se envían automáticamente vía Kafka (no hay endpoint de disparo manual)."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://arka-alb-1673054971.us-east-1.elb.amazonaws.com"
+    },
+    {
+      "key": "providerId",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "cartId",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    },
+    {
+      "key": "paymentId",
+      "value": ""
     }
   ]
 }
