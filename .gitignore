@@ -55,3 +55,6 @@ ERROR
 CLAUDE.local.md
 **/CLAUDE.local.md
 docs/superpowers/
+
+# IntelliJ compiled output
+**/bin/
