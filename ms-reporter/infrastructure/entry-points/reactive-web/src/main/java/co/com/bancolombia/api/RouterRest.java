@@ -11,8 +11,8 @@ public class RouterRest {
     @Bean
     public RouterFunction<ServerResponse> routerFunction(Handler handler) {
         return RouterFunctions.route()
-                .GET("/api/events/type/{type}", handler::getEventsByType)
-                .GET("/api/events/aggregate/{id}", handler::getEventsByAggregate)
+                .GET("/api/reports/events/type/{type}", handler::getEventsByType)
+                .GET("/api/reports/events/aggregate/{id}", handler::getEventsByAggregate)
                 .build();
     }
 }

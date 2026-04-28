@@ -13,6 +13,9 @@ spring:
       initial-size: 10
       max-size: 20
       validation-query: "SELECT 1"
+  sql:
+    init:
+      mode: always
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:

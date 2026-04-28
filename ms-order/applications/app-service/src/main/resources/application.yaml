@@ -7,6 +7,9 @@ spring:
     url: ${R2DBC_URL:r2dbc:postgresql://localhost:5432/arka_order}
     username: ${DB_USER:arka}
     password: ${DB_PASSWORD:arka123}
+  sql:
+    init:
+      mode: always
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:

@@ -17,17 +17,17 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
  * Functional routing — declara las rutas REST sin @RestController.
  *
  * Endpoints expuestos:
- *   POST   /api/products             → registra producto (HU1 paso 1)
- *   GET    /api/products             → lista (?status=, ?category=)
- *   GET    /api/products/{id}        → detalle
- *   POST   /api/products/{id}/confirm → confirmación manual (atajo HU1)
+ *   POST   /api/v1/products             → registra producto (HU1 paso 1)
+ *   GET    /api/v1/products             → lista (?status=, ?category=)
+ *   GET    /api/v1/products/{id}        → detalle
+ *   POST   /api/v1/products/{id}/confirm → confirmación manual (atajo HU1)
  */
 @Configuration
 public class RouterRest {
 
     @Bean
     public RouterFunction<ServerResponse> productRoutes(Handler handler) {
-        return nest(path("/api/products"),
+        return nest(path("/api/v1/products"),
                 route(POST("").and(accept(MediaType.APPLICATION_JSON)), handler::createProduct)
                         .andRoute(GET(""), handler::listProducts)
                         .andRoute(GET("/{id}"), handler::getProduct)
