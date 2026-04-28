@@ -50,3 +50,8 @@ Autenticando
 Construyendo
 ERROR
 =
+
+# Claude Code (archivos privados del agente)
+CLAUDE.local.md
+**/CLAUDE.local.md
+docs/superpowers/
