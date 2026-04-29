@@ -14,8 +14,6 @@ spring:
     consumer:
       group-id: ms-catalog
       auto-offset-reset: earliest
-  profiles:
-    include: null
 management:
   endpoints:
     web:
@@ -30,5 +28,20 @@ cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080,http://localhost:8081"
 arka:
   catalog:
-    use-in-memory-repository: true   # cambia a false cuando MongoDB esté arriba
-    use-in-memory-broker: true       # cambia a false cuando Kafka esté arriba
+    use-in-memory-repository: true
+    use-in-memory-broker: true
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  data:
+    mongodb:
+      uri: mongodb://arka:arka123@mongodb.arka.local:27017/arka_catalog
+      auto-index-creation: false
+  kafka:
+    bootstrap-servers: kafka.arka.local:9092
+arka:
+  catalog:
+    use-in-memory-repository: false
+    use-in-memory-broker: false
