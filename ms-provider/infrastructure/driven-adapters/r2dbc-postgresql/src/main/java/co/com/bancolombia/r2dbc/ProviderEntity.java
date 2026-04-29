@@ -3,19 +3,25 @@ package co.com.bancolombia.r2dbc;
 import co.com.bancolombia.model.provider.Provider;
 import lombok.*;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Table;
 import java.time.Instant;
 
 @Getter @Setter @Builder @AllArgsConstructor @NoArgsConstructor
 @Table("providers")
-public class ProviderEntity {
+public class ProviderEntity implements Persistable<String> {
     @Id private String providerId;
+    @Transient @Builder.Default private boolean isNew = true;
     private String name;
     private String contactEmail;
     private String phone;
     private Integer leadTimeDays;
     private Boolean active;
     private Instant createdAt;
+
+    @Override
+    public String getId() { return providerId; }
 
     public Provider toDomain() {
         return Provider.builder()

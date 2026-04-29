@@ -4,6 +4,8 @@ import co.com.bancolombia.model.payment.Payment;
 import co.com.bancolombia.model.payment.PaymentStatus;
 import lombok.*;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -16,11 +18,12 @@ import java.time.Instant;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table("payments")
-public class PaymentEntity {
+public class PaymentEntity implements Persistable<String> {
 
     @Id
     @Column("payment_id")
     private String paymentId;
+    @Transient @Builder.Default private boolean isNew = true;
 
     @Column("order_id")
     private String orderId;
@@ -39,6 +42,9 @@ public class PaymentEntity {
 
     @Column("processed_at")
     private Instant processedAt;
+
+    @Override
+    public String getId() { return paymentId; }
 
     public static PaymentEntity fromDomain(Payment payment) {
         return PaymentEntity.builder()

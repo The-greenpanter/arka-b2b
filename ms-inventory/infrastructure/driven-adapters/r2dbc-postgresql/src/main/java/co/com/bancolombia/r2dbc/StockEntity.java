@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -25,11 +27,12 @@ import java.time.Instant;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table("stock")
-public class StockEntity {
+public class StockEntity implements Persistable<String> {
 
     @Id
     @Column("stock_id")
     private String stockId;
+    @Transient @Builder.Default private boolean isNew = true;
 
     @Column("product_id")
     private String productId;
@@ -57,6 +60,9 @@ public class StockEntity {
 
     @Column("updated_at")
     private Instant updatedAt;
+
+    @Override
+    public String getId() { return stockId; }
 
     public static StockEntity fromDomain(Stock stock) {
         return StockEntity.builder()
