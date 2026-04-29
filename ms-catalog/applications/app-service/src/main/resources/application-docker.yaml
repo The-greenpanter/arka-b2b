@@ -1,0 +1,11 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://arka:arka123@mongodb.arka.local:27017/arka_catalog
+      auto-index-creation: false
+  kafka:
+    bootstrap-servers: kafka.arka.local:9092
+arka:
+  catalog:
+    use-in-memory-repository: false
+    use-in-memory-broker: false
