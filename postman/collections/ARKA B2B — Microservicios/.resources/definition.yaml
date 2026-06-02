@@ -1,0 +1,10 @@
+$kind: collection
+description: |-
+  Colección completa de endpoints ARKA B2B. Configura la variable BASE_URL según el entorno:
+  - Local: http://localhost:8080
+  - VPS: http://187.77.192.190:8080
+variables:
+  BASE_URL: http://localhost:8080
+  productId: ""
+  cartId: ""
+  orderId: ""

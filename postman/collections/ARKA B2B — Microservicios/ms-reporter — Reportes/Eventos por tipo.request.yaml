@@ -1,0 +1,6 @@
+$kind: http-request
+url: ?type=catalog.product-validated
+method: GET
+queryParams:
+  type: catalog.product-validated
+order: 2000

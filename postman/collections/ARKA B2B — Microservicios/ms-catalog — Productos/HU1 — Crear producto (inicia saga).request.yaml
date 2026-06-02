@@ -1,0 +1,30 @@
+$kind: http-request
+url: "{{BASE_URL}}/api/v1/products"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Monitor 4K UltraWide",
+      "category": "MONITORES",
+      "basePriceUsd": 599.99,
+      "taxRate": 0.19,
+      "minOrderQty": 1,
+      "maxOrderQty": 100,
+      "supplier": {
+        "supplierId": "sup-001",
+        "name": "DisplayCorp S.A.",
+        "leadTimeDays": 14
+      }
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const json = pm.response.json();
+      if (json.productId) pm.collectionVariables.set('productId', json.productId);
+      pm.test('Status 201', () => pm.response.to.have.status(201));
+      pm.test('Estado VALIDANDO_PROVEEDOR', () => pm.expect(json.status).to.eql('VALIDANDO_PROVEEDOR'));
+    language: text/javascript
+order: 1000

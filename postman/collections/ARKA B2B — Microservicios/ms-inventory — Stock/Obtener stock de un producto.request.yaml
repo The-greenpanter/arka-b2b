@@ -1,0 +1,12 @@
+$kind: http-request
+url: "{{BASE_URL}}/api/v1/stock/{{productId}}"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('Tiene availableQty', () => pm.expect(json.availableQty).to.be.a('number'));
+      console.log('Stock disponible:', json.availableQty);
+    language: text/javascript
+order: 1000

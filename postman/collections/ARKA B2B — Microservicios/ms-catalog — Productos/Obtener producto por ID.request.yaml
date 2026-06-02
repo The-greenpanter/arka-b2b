@@ -1,0 +1,12 @@
+$kind: http-request
+url: "{{BASE_URL}}/api/v1/products/{{productId}}"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('Tiene productId', () => pm.expect(json.productId).to.be.a('string'));
+      console.log('Estado actual:', json.status);
+    language: text/javascript
+order: 2000

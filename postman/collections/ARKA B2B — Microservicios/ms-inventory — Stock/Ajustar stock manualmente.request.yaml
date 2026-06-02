@@ -1,0 +1,13 @@
+$kind: http-request
+url: "{{BASE_URL}}/api/v1/stock/{{productId}}"
+method: PATCH
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "delta": 50,
+      "reason": "Carga inicial de inventario"
+    }
+order: 2000

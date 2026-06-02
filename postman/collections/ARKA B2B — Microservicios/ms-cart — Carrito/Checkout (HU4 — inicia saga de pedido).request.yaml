@@ -1,0 +1,12 @@
+$kind: http-request
+url: "{{BASE_URL}}/api/v1/carts/{{cartId}}/checkout"
+method: POST
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200 o 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]));
+      const json = pm.response.json();
+      if (json.orderId) pm.collectionVariables.set('orderId', json.orderId);
+      console.log('Pedido creado:', json.orderId);
+    language: text/javascript
+order: 4000

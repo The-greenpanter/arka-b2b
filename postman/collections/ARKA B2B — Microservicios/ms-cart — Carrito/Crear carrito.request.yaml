@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{BASE_URL}}/api/v1/carts"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "customerId": "cust-001"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const json = pm.response.json();
+      if (json.cartId) pm.collectionVariables.set('cartId', json.cartId);
+      pm.test('Status 201', () => pm.response.to.have.status(201));
+    language: text/javascript
+order: 1000

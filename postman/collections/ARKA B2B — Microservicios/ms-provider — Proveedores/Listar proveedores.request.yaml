@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{BASE_URL}}/api/v1/providers"
+method: GET
+order: 1000

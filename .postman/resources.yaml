@@ -1,0 +1,11 @@
+# Use this workspace to collaborate
+workspace:
+  id: 2c217256-9d2c-4314-b987-e21271c4dce5
+
+localResources:
+  collections:
+    - ..\docs\ARKA-Postman-Collection.json
+
+cloudResources:
+  collections:
+    ..\postman\collections\ARKA B2B — Microservicios: 527e91f9-581e-47f6-bcf8-77f05ff55244

@@ -1,0 +1,5 @@
+name: ARKA AWS
+values:
+  - key: BASE_URL
+    value: 'http://arka-alb-1673054971.us-east-1.elb.amazonaws.com'
+color: 0
